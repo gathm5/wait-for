@@ -121,6 +121,25 @@ const statistics = async () => {
     return {};
   }
 }
+
+const onTimeout = (cb, time = null, alternate = undefined) => {
+  let timer;
+  let isFullfilled = false;
+  let key = () => {
+    return isFullfilled;
+  };
+  let unlock = () => clearTimeout(timer);
+  if (!time) {
+    return cb(key, unlock);
+  }
+  timer = setTimeout(() => {
+    if (typeof alternate === 'function') {
+      alternate()
+    };
+  });
+  return cb(key, unlock);
+}
+
 module.exports = {
   waitFor: waitHelper,
   on: waitHelper,
@@ -134,4 +153,6 @@ module.exports = {
   monitor,
   statistics,
   after: waitHelper,
+  onTimeout,
+  timeout: onTimeout
 };
