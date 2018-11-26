@@ -136,7 +136,7 @@ const onTimeout = (cb, time = null, alternate = undefined) => {
     if (typeof alternate === 'function') {
       alternate()
     };
-  });
+  }, time);
   return cb(key, unlock);
 }
 
