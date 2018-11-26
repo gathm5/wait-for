@@ -6,11 +6,11 @@ monitor((status) => {
 
 const unsubscribe = waitFor('eventing', (data) => {
   console.log('Subscriber 1::', data);
-});
+}, true);
 
 const u = waitFor('eventing', (data) => {
   console.log('Subscriber 2::', data);
-})
+}, true)
 
 let counter = 0;
 setInterval(() => {

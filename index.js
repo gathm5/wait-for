@@ -11,7 +11,7 @@ const stats = {
   callback: () => null,
 };
 
-const waitHelper = (eventName, cb, once = false) => {
+const waitHelper = (eventName, cb, always = false) => {
   eventList[eventName] = eventList[eventName] || [];
   eventList[eventName].push(eventName);
   const unsubscribe = () => {
@@ -22,25 +22,17 @@ const waitHelper = (eventName, cb, once = false) => {
   };
   const realCallback = (...args) => {
     cb(...args);
-    if (once) { unsubscribe(); }
+    if (!always) { unsubscribe(); }
   }
-  if (once) {
-    EE.once(eventName, realCallback);
-  } else {
+  if (always) {
     EE.on(eventName, realCallback);
+  } else {
+    EE.once(eventName, realCallback);
   }
   stats.subscribers.events[eventName] = stats.subscribers.events[eventName] || 0;
   stats.subscribers.events[eventName] += 1;
   stats.callback({ action: 'SUBSCRIBER_ADDED', actionName: eventName }, true);
   return unsubscribe;
-}
-
-const waitFor = (eventName, cb) => {
-  return waitHelper(eventName, cb);
-};
-
-const waitForOnce = (eventName, cb) => {
-  return waitHelper(eventName, cb, true);
 }
 
 const trigger = (eventName, ...args) => {
@@ -130,14 +122,16 @@ const statistics = async () => {
   }
 }
 module.exports = {
-  waitFor,
-  on: waitFor,
-  waitForOnce,
-  once: waitForOnce,
-  subscribe: waitFor,
+  waitFor: waitHelper,
+  on: waitHelper,
+  waitAlways: (a1, a2) => waitHelper(a1, a2, true),
+  waitForOnce: (a1, a2) => waitHelper(a1, a2),
+  once: (a1, a2) => waitHelper(a1, a2),
+  subscribe: waitHelper,
   trigger,
   emit: trigger,
   publish: trigger,
   monitor,
   statistics,
+  after: waitHelper,
 };
