@@ -11,23 +11,38 @@ const stats = {
   callback: () => null,
 };
 
-const waitFor = (eventName, cb) => {
+const waitHelper = (eventName, cb, once = false) => {
   eventList[eventName] = eventList[eventName] || [];
   eventList[eventName].push(eventName);
-  const realCallback = (...args) => {
-    cb(...args);
-  }
-  EE.on(eventName, realCallback);
-  stats.subscribers.events[eventName] = stats.subscribers.events[eventName] || 0;
-  stats.subscribers.events[eventName] += 1;
-  stats.callback({ action: 'SUBSCRIBER_ADDED', actionName: eventName }, true);
-  return () => {
+  const unsubscribe = () => {
     EE.removeListener(eventName, realCallback);
     eventList[eventName].pop();
     stats.subscribers.events[eventName] -= 1;
     stats.callback({ action: 'SUBSCRIBER_REMOVED', actionName: eventName }, true);
+  };
+  const realCallback = (...args) => {
+    cb(...args);
+    if (once) { unsubscribe(); }
   }
+  if (once) {
+    EE.once(eventName, realCallback);
+  } else {
+    EE.on(eventName, realCallback);
+  }
+  stats.subscribers.events[eventName] = stats.subscribers.events[eventName] || 0;
+  stats.subscribers.events[eventName] += 1;
+  stats.callback({ action: 'SUBSCRIBER_ADDED', actionName: eventName }, true);
+  return unsubscribe;
+}
+
+const waitFor = (eventName, cb) => {
+  return waitHelper(eventName, cb);
 };
+
+const waitForOnce = (eventName, cb) => {
+  return waitHelper(eventName, cb, true);
+}
+
 const trigger = (eventName, ...args) => {
   if (eventName.match(/.*\*$/m)) {
     const matching = eventName.replace('*', '');
@@ -117,6 +132,8 @@ const statistics = async () => {
 module.exports = {
   waitFor,
   on: waitFor,
+  waitForOnce,
+  once: waitForOnce,
   subscribe: waitFor,
   trigger,
   emit: trigger,
